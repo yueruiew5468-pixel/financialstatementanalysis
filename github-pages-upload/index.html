@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>財報分析助手</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar" aria-label="財報分析控制台">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">FA</div>
+          <div>
+            <p class="eyebrow">Financial Analysis</p>
+            <h1>財報分析</h1>
+          </div>
+        </div>
+
+        <section class="panel compact profile-panel">
+          <div class="panel-title">
+            <span>公司檔案</span>
+            <span class="status-pill">分析中</span>
+          </div>
+          <label class="field-label" for="companySelect">分析標的</label>
+          <select id="companySelect">
+            <option value="auras" selected>雙鴻科技股份有限公司（3324）</option>
+            <option value="sample">宏遠精密製造股份有限公司</option>
+            <option value="stable">勤實電子材料股份有限公司</option>
+            <option value="stress">景泰營造工程股份有限公司</option>
+          </select>
+          <div class="meta-grid">
+            <div>
+              <span>分析口徑</span>
+              <strong id="creditLimit">季度 / TTM</strong>
+            </div>
+            <div>
+              <span>分析週期</span>
+              <strong>季度</strong>
+            </div>
+            <div class="meta-wide">
+              <span>資料來源</span>
+              <strong id="dataSource">公開資訊觀測站資料快照</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel compact data-panel">
+          <div class="panel-title">
+            <span>資料設定</span>
+            <button class="icon-button" id="resetData" title="還原樣本資料" aria-label="還原樣本資料">↺</button>
+          </div>
+          <div class="parser-status" id="parserStatus">
+            <strong>公開資料已載入</strong>
+            <span id="parserDetail">雙鴻科技已依公開財報資料建立分析。</span>
+          </div>
+          <label class="secondary-upload" for="structuredUpload">匯入 CSV / JSON 資料</label>
+          <input id="structuredUpload" type="file" accept=".csv,.json" />
+          <button class="secondary-button" id="downloadTemplate">下載 CSV 範本</button>
+        </section>
+
+        <section class="panel compact flow-panel">
+          <div class="panel-title">
+            <span>分析流程</span>
+          </div>
+          <ol class="steps">
+            <li class="done">載入財報</li>
+            <li class="done">計算比率</li>
+            <li class="active">偵測異常</li>
+            <li>生成分析摘要</li>
+          </ol>
+        </section>
+
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">財報指標分析器</p>
+            <h2 id="companyName">雙鴻科技股份有限公司</h2>
+          </div>
+          <div class="top-actions">
+            <button class="secondary-button" id="copySummary">複製摘要</button>
+            <button class="primary-button" id="exportReport">匯出分析報告</button>
+          </div>
+        </header>
+
+        <section class="kpi-strip" aria-label="財報分析指標">
+          <article class="kpi">
+            <span>初步分析結論</span>
+            <strong id="recommendation">加強條件</strong>
+            <small id="recommendationReason">短債與現金流壓力升高</small>
+          </article>
+          <article class="kpi">
+            <span>風險分數</span>
+            <strong id="riskScore">--</strong>
+            <small id="riskScoreReason">等待分析</small>
+          </article>
+          <article class="kpi">
+            <span>風險警示</span>
+            <strong id="alertCount">5</strong>
+            <small>需追蹤項目</small>
+          </article>
+          <article class="kpi">
+            <span>流動比率</span>
+            <strong id="currentRatio">0.96</strong>
+            <small id="currentRatioDelta">較去年下降 30.4%</small>
+          </article>
+          <article class="kpi">
+            <span>負債比率</span>
+            <strong id="debtRatio">71.0%</strong>
+            <small id="debtRatioDelta">較去年上升 13.9%</small>
+          </article>
+        </section>
+
+        <section class="analysis-grid">
+          <article class="panel alert-panel">
+            <div class="panel-title">
+              <span>異常偵測</span>
+              <span class="status-pill danger" id="riskLevel">高關注</span>
+            </div>
+            <div class="alert-summary" id="alertSummary">已觸發 0 項 / 監控 0 項規則</div>
+            <ul class="alert-list" id="alertList"></ul>
+            <details class="alert-rules">
+              <summary>查看監控規則</summary>
+              <ul id="alertRuleList"></ul>
+            </details>
+          </article>
+
+          <article class="panel wide trend-panel">
+            <div class="panel-title">
+              <span>財務趨勢</span>
+              <div class="segmented chart-toggle" role="tablist" aria-label="趨勢指標">
+                <button class="selected" data-chart="revenue">營收</button>
+                <button data-chart="profit">獲利</button>
+                <button data-chart="liquidity">流動性</button>
+              </div>
+              <span class="status-pill" id="chartBasis">TTM 趨勢</span>
+            </div>
+            <div class="bar-chart" id="barChart" aria-label="財務趨勢圖"></div>
+          </article>
+
+          <article class="panel wide ratios-panel">
+            <div class="panel-title">
+              <span>財務比率矩陣</span>
+              <div class="panel-tools">
+                <div class="segmented basis-toggle" role="tablist" aria-label="資料口徑">
+                  <button data-basis="annual">年度</button>
+                  <button data-basis="ytd">季累計</button>
+                  <button data-basis="quarter">單季</button>
+                  <button class="selected" data-basis="ttm">TTM</button>
+                </div>
+                <span class="status-pill" id="ratioBasis">TTM 計算層</span>
+              </div>
+            </div>
+            <div class="ratio-table-wrap">
+              <table class="ratio-table">
+                <thead>
+                  <tr>
+                    <th>指標</th>
+                    <th id="ratioLatestHeader">最新期間</th>
+                    <th id="ratioPreviousHeader">比較期間</th>
+                    <th>變動</th>
+                    <th>判讀</th>
+                  </tr>
+                </thead>
+                <tbody id="ratioTable"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel wide quarters-panel">
+            <div class="panel-title">
+              <span>季度預警</span>
+              <span class="status-pill" id="quarterBasis">單季 / TTM</span>
+            </div>
+            <div class="ratio-table-wrap">
+              <table class="ratio-table quarter-table">
+                <thead>
+                  <tr>
+                    <th>期間</th>
+                    <th>單季營收</th>
+                    <th>營業現金流</th>
+                    <th>流動比率</th>
+                    <th>判讀</th>
+                  </tr>
+                </thead>
+                <tbody id="quarterTable"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel evidence-panel">
+            <div class="panel-title">
+              <span>來源追溯</span>
+              <span class="status-pill">防幻覺設計</span>
+            </div>
+            <div class="evidence-list" id="evidenceList"></div>
+          </article>
+
+        </section>
+
+        <section class="report-band">
+          <article class="panel report-panel">
+            <div class="panel-title">
+              <span>AI 財報分析摘要</span>
+              <div class="confidence">
+                <span>信心分數</span>
+                <strong id="confidenceScore">82%</strong>
+              </div>
+            </div>
+            <div class="report-body" id="reviewSummary"></div>
+          </article>
+
+          <article class="panel reviewer-panel">
+            <div class="panel-title">
+              <span>人工註記</span>
+              <span class="status-pill warning">需人工判讀</span>
+            </div>
+            <label class="check-row">
+              <input type="checkbox" />
+              <span>已核對公開財報來源與金額</span>
+            </label>
+            <label class="check-row">
+              <input type="checkbox" />
+              <span>已檢查關係人交易與重大附註</span>
+            </label>
+            <label class="check-row">
+              <input type="checkbox" />
+              <span>已補充公司最新營運說明</span>
+            </label>
+            <textarea id="reviewerNote" placeholder="輸入人工判讀、補充說明或需追蹤事項"></textarea>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./analysis-engine.js"></script>
+    <script src="./data/mops/3324_auras/auras_mops_data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
