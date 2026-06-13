@@ -313,6 +313,163 @@ function rowLabel(row) {
   return row.period || (row.season ? `${row.year}Q${row.season}` : row.year);
 }
 
+function metricDays(value) {
+  if (!Number.isFinite(value)) return "n/a";
+  return `${Math.round(value)} 天`;
+}
+
+function normalizeFinancialText(text) {
+  return String(text || "")
+    .replace(/加強條件/g, "審慎觀察")
+    .replace(/列入觀察/g, "中性偏審慎")
+    .replace(/維持追蹤/g, "穩健追蹤")
+    .replace(/授信複審/g, "財報分析")
+    .replace(/授信/g, "財報分析")
+    .replace(/複審/g, "分析")
+    .replace(/客戶檔案/g, "財報分析來源")
+    .replace(/此客戶/g, "此公司")
+    .replace(/要求客戶補充/g, "補充檢視")
+    .replace(/要求提供/g, "補充檢視")
+    .replace(/需補資料/g, "需後續追蹤")
+    .replace(/補資料/g, "補充資訊")
+    .replace(/擔保或保證/g, "財務風險緩衝")
+    .replace(/保證條件/g, "風險緩衝")
+    .replace(/展延/g, "延後判斷")
+    .replace(/自動續約/g, "例行追蹤");
+}
+
+function normalizeRecommendation(recommendation = {}) {
+  const labelMap = {
+    加強條件: "審慎觀察",
+    列入觀察: "中性偏審慎",
+    維持追蹤: "穩健追蹤",
+  };
+
+  return {
+    ...recommendation,
+    label: labelMap[recommendation.label] || normalizeFinancialText(recommendation.label || "審慎觀察"),
+    reason: normalizeFinancialText(recommendation.reason || "財務指標需持續追蹤"),
+    riskLabel: normalizeFinancialText(recommendation.riskLabel || "觀察"),
+  };
+}
+
+function normalizeAlerts(alerts = []) {
+  return alerts.map((item) => ({
+    ...item,
+    title: normalizeFinancialText(item.title),
+    detail: normalizeFinancialText(item.detail),
+    action: normalizeFinancialText(item.action),
+  }));
+}
+
+function joinObservationItems(alerts) {
+  return alerts
+    .slice(0, 3)
+    .map((item) => item.action)
+    .filter(Boolean)
+    .map((text) => normalizeFinancialText(text).replace(/[。；;]+$/u, ""))
+    .join("；");
+}
+
+function buildFinancialSummary(company, analysis) {
+  const recommendation = analysis.recommendation;
+  const riskProfile = analysis.riskProfile || {};
+  const alerts = analysis.alerts || [];
+  const materialAlerts = alerts.filter((item) => item.severity !== "low");
+  const keyAlerts = materialAlerts
+    .slice(0, 4)
+    .map((item) => item.title)
+    .join("、");
+  const observationText =
+    joinObservationItems(materialAlerts) ||
+    "持續比對月營收、管理層展望、期後現金流與下一期財報變化";
+
+  const annualRows = analysis.views?.annual?.rows || analysis.rows || [];
+  const latestAnnual = annualRows.at(-1);
+  const previousAnnual = annualRows.at(-2);
+  const quarterRows = analysis.views?.quarter?.rows || analysis.quarterRows || [];
+  const latestQuarter = quarterRows.at(-1);
+  const previousQuarter = quarterRows.at(-2);
+  const ttmRows = analysis.views?.ttm?.rows || analysis.ttmRows || [];
+  const latestTtm = ttmRows.at(-1);
+
+  if (analysis.basis === "quarterly" && latestQuarter && previousQuarter && latestTtm && latestAnnual && previousAnnual) {
+    return [
+      {
+        title: "一、整體財務判讀",
+        text: `${company.company} 目前判讀為「${recommendation.label}」；風險分數 ${riskProfile.score ?? "--"}/100（${riskProfile.band || recommendation.riskLabel}）。本次以 ${rowLabel(latestQuarter)} 最新季資料、單季異常與 TTM 指標作為主要分析口徑，重點在於成長動能是否伴隨現金流與營運資金壓力。`,
+      },
+      {
+        title: "二、營收與獲利趨勢",
+        text: `${rowLabel(latestQuarter)} 單季營收為 ${money(latestQuarter.revenue)}，${comparisonText(latestQuarter.revenue, previousQuarter.revenue, "前一季")}；最新年度營收為 ${money(latestAnnual.revenue)}，${comparisonText(latestAnnual.revenue, previousAnnual.revenue, "去年")}。TTM 毛利率 ${pct(latestTtm.grossMargin)}、營業利益率 ${pct(latestTtm.operatingMargin)}、稅後淨利率 ${pct(latestTtm.netMargin)}，需觀察成長是否能轉化為穩定獲利。`,
+      },
+      {
+        title: "三、現金流與盈餘品質",
+        text: `最新 TTM 營業現金流為 ${money(latestTtm.operatingCashFlow)}，單季營業現金流為 ${money(latestQuarter.operatingCashFlow)}，獲利轉現金比率為 ${ratio(latestTtm.cfoToNetIncome)}。若淨利維持成長但現金流偏弱，代表盈餘品質與營運資金占用需優先檢視。`,
+      },
+      {
+        title: "四、資產負債與償債能力",
+        text: `${rowLabel(latestQuarter)} 流動比率 ${ratio(latestQuarter.currentRatio)}、速動比率 ${ratio(latestQuarter.quickRatio)}、負債比率 ${pct(latestQuarter.debtRatio)}、短期借款 / 流動負債 ${pct(latestQuarter.shortDebtToCurrentLiabilities)}。此區重點在短期流動性、負債增加速度與財務槓桿是否持續升高。`,
+      },
+      {
+        title: "五、營運資金變化",
+        text: `${rowLabel(latestQuarter)} 應收帳款 / 營收為 ${pct(latestQuarter.arToRevenue)}，存貨 / 營收為 ${pct(latestQuarter.inventoryToRevenue)}，應收加存貨 / 營收為 ${pct(latestQuarter.workingCapitalLoad)}；應收帳款週轉天數 ${metricDays(latestQuarter.dso)}、存貨週轉天數 ${metricDays(latestQuarter.inventoryDays)}。若營運資金占用升高，將壓縮自由現金流與短期資金彈性。`,
+      },
+      {
+        title: "六、異常訊號摘要",
+        text: `${keyAlerts || "目前未偵測重大季度異常"}。異常訊號應搭配單季、季累計、TTM 與年度趨勢交叉檢視，避免只看單一期間造成誤判。`,
+      },
+      {
+        title: "七、後續觀察重點",
+        text: `${observationText}。`,
+      },
+    ];
+  }
+
+  const rows = analysis.views?.annual?.rows || analysis.rows || [];
+  const latest = rows.at(-1);
+  const previous = rows.at(-2);
+  if (!latest || !previous) return (analysis.summarySections || []).map((section) => ({ ...section, text: normalizeFinancialText(section.text) }));
+
+  return [
+    {
+      title: "一、整體財務判讀",
+      text: `${company.company} 目前判讀為「${recommendation.label}」；風險分數 ${riskProfile.score ?? "--"}/100（${riskProfile.band || recommendation.riskLabel}）。主要壓力來自 ${recommendation.reason}，後續應以現金流、營運資金與槓桿變化作為核心觀察軸。`,
+    },
+    {
+      title: "二、營收與獲利趨勢",
+      text: `最新年度營收為 ${money(latest.revenue)}，${comparisonText(latest.revenue, previous.revenue, "去年")}；毛利率 ${pct(latest.grossMargin)}、營業利益率 ${pct(latest.operatingMargin)}、稅後淨利率 ${pct(latest.netMargin)}。需觀察營收成長是否能同步維持毛利與本業獲利品質。`,
+    },
+    {
+      title: "三、現金流與盈餘品質",
+      text: `營業現金流為 ${money(latest.operatingCashFlow)}，營業現金流 / 負債為 ${pct(latest.cfoDebtRatio)}，獲利轉現金比率為 ${ratio(latest.cfoToNetIncome)}。若損益表獲利未同步轉為現金，代表盈餘品質與營運資金占用需要進一步追蹤。`,
+    },
+    {
+      title: "四、資產負債與償債能力",
+      text: `流動比率 ${ratio(latest.currentRatio)}、速動比率 ${ratio(latest.quickRatio)}、負債比率 ${pct(latest.debtRatio)}、利息保障倍數 ${ratio(latest.interestCoverage)} 倍。此區重點在於短期流動性緩衝、財務槓桿與利息覆蓋能力是否同步惡化。`,
+    },
+    {
+      title: "五、營運資金變化",
+      text: `應收帳款 / 營收為 ${pct(latest.arToRevenue)}，存貨 / 營收為 ${pct(latest.inventoryToRevenue)}，應收加存貨 / 營收為 ${pct(latest.workingCapitalLoad)}；應收帳款週轉天數 ${metricDays(latest.dso)}、存貨週轉天數 ${metricDays(latest.inventoryDays)}。若兩者升高，表示營收成長可能被營運資金占用抵銷。`,
+    },
+    {
+      title: "六、異常訊號摘要",
+      text: `${keyAlerts || "目前未偵測重大財務異常"}。異常偵測結果應與趨勢圖、比率矩陣及原始財報來源交叉比對，避免單一指標造成過度解讀。`,
+    },
+    {
+      title: "七、後續觀察重點",
+      text: `${observationText}。`,
+    },
+  ];
+}
+
+function normalizeAnalysis(company, analysis) {
+  analysis.recommendation = normalizeRecommendation(analysis.recommendation);
+  analysis.alerts = normalizeAlerts(analysis.alerts || []);
+  analysis.summarySections = buildFinancialSummary(company, analysis);
+  return analysis;
+}
+
 function renderKpis(rows, recommendation, alerts, compareLabel, riskProfile) {
   const latest = rows.at(-1);
   const previous = rows.at(-2);
@@ -470,7 +627,7 @@ function updateBasisButtons(analysis, selectedBasis) {
 
 function render() {
   const company = getCompany();
-  const analysis = analyzeCompany(company);
+  const analysis = normalizeAnalysis(company, analyzeCompany(company));
   const { alerts, alertRules, recommendation, ratios, summarySections } = analysis;
   const selectedBasis = analysis.views[activeBasis] ? activeBasis : analysis.defaultView;
   const view = analysis.views[selectedBasis];
