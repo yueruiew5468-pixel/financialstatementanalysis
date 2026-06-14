@@ -1,0 +1,17 @@
+.DS_Store
+.pycache/
+__pycache__/
+*.pyc
+*.log
+
+dist/
+outputs/
+
+data/mops/*.zip
+data/mops/3324_auras/raw_html/
+data/mops/3324_auras/parsed/
+data/mops/3324_auras/README.md
+data/mops/3324_auras/manifest.json
+
+tests/
+tools/
