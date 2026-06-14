@@ -579,6 +579,25 @@ function renderChart(rows) {
     .join("");
 }
 
+function parseDisplayedPercent(value) {
+  const text = String(value || "").trim();
+  if (!text.endsWith("%")) return Number.NaN;
+  return Number.parseFloat(text.replace("%", ""));
+}
+
+function formatRatioDeltaForDisplay(item) {
+  const latestPercent = parseDisplayedPercent(item.latest);
+  const previousPercent = parseDisplayedPercent(item.previous);
+  if (!Number.isFinite(latestPercent) || !Number.isFinite(previousPercent)) return item.delta;
+
+  const compareLabel = String(item.delta || "").match(/^較(.+?)(?:上升|下降|持平)/)?.[1] || "比較期";
+  const delta = latestPercent - previousPercent;
+  if (Math.abs(delta) < 0.05) return `較${compareLabel}持平 0.0 個百分點`;
+
+  const direction = delta >= 0 ? "上升" : "下降";
+  return `較${compareLabel}${direction} ${Math.abs(delta).toFixed(1)} 個百分點`;
+}
+
 function renderRatios(items) {
   const latestLabel = dom.ratioLatestHeader.textContent || "最新期間";
   const previousLabel = dom.ratioPreviousHeader.textContent || "比較期間";
@@ -589,7 +608,7 @@ function renderRatios(items) {
           <td data-label="指標"><strong>${html(item.name)}</strong></td>
           <td data-label="${html(latestLabel)}">${html(item.latest)}</td>
           <td data-label="${html(previousLabel)}">${html(item.previous)}</td>
-          <td data-label="變動">${html(item.delta)}</td>
+          <td data-label="變動">${html(formatRatioDeltaForDisplay(item))}</td>
           <td data-label="判讀"><span class="tag ${html(item.tag)}">${html(item.reading)}</span></td>
         </tr>
       `,
@@ -894,7 +913,7 @@ function buildExportReport(company, analysis, note = "") {
     .join("\n\n");
   const ratioSnapshot = (view.ratios || analysis.ratios || [])
     .slice(0, 6)
-    .map((item) => `- ${item.name}：${item.latest}（${item.delta}，${item.reading}）`)
+    .map((item) => `- ${item.name}：${item.latest}（${formatRatioDeltaForDisplay(item)}，${item.reading}）`)
     .join("\n");
 
   return [
