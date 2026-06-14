@@ -543,7 +543,7 @@ function renderKpis(rows, recommendation, alerts, compareLabel, riskProfile) {
   dom.currentRatio.textContent = ratio(latest.currentRatio);
   dom.currentRatioDelta.textContent = comparisonText(latest.currentRatio, previous.currentRatio, compareLabel);
   dom.debtRatio.textContent = pct(latest.debtRatio);
-  dom.debtRatioDelta.textContent = comparisonText(latest.debtRatio, previous.debtRatio, compareLabel);
+  dom.debtRatioDelta.textContent = formatPercentPointDelta(latest.debtRatio, previous.debtRatio, compareLabel);
   dom.riskLevel.textContent = recommendation.riskLabel;
   dom.riskLevel.className = `status-pill ${recommendation.riskLabel.includes("高") ? "danger" : recommendation.riskLabel.includes("觀察") ? "warning" : ""}`;
   dom.confidenceScore.textContent = `${recommendation.confidence}%`;
@@ -585,17 +585,22 @@ function parseDisplayedPercent(value) {
   return Number.parseFloat(text.replace("%", ""));
 }
 
+function formatPercentPointDelta(current, previous, compareLabel = "比較期") {
+  if (!Number.isFinite(current) || !Number.isFinite(previous)) return `較${compareLabel} n/a`;
+  const delta = (current - previous) * 100;
+  if (Math.abs(delta) < 0.05) return `較${compareLabel}持平 0.0 個百分點`;
+
+  const direction = delta >= 0 ? "上升" : "下降";
+  return `較${compareLabel}${direction} ${Math.abs(delta).toFixed(1)} 個百分點`;
+}
+
 function formatRatioDeltaForDisplay(item) {
   const latestPercent = parseDisplayedPercent(item.latest);
   const previousPercent = parseDisplayedPercent(item.previous);
   if (!Number.isFinite(latestPercent) || !Number.isFinite(previousPercent)) return item.delta;
 
   const compareLabel = String(item.delta || "").match(/^較(.+?)(?:上升|下降|持平)/)?.[1] || "比較期";
-  const delta = latestPercent - previousPercent;
-  if (Math.abs(delta) < 0.05) return `較${compareLabel}持平 0.0 個百分點`;
-
-  const direction = delta >= 0 ? "上升" : "下降";
-  return `較${compareLabel}${direction} ${Math.abs(delta).toFixed(1)} 個百分點`;
+  return formatPercentPointDelta(latestPercent / 100, previousPercent / 100, compareLabel);
 }
 
 function renderRatios(items) {
