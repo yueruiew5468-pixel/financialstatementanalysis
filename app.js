@@ -371,6 +371,25 @@ function joinObservationItems(alerts) {
     .join("；");
 }
 
+function leadSummarySection(company, recommendation, riskProfile) {
+  return {
+    type: "lead",
+    title: "一句話總結",
+    text: `${company.company} 初步判讀為「${recommendation.label}」，風險分數 ${riskProfile.score ?? "--"}/100（${riskProfile.band || recommendation.riskLabel}）；目前重點是確認成長動能是否能同步轉化為現金流與營運資金品質改善。`,
+  };
+}
+
+function reportSection(title, fact, judgement, followUp) {
+  return {
+    title,
+    items: [
+      { label: "事實", text: normalizeFinancialText(fact) },
+      { label: "判讀", text: normalizeFinancialText(judgement) },
+      { label: "追蹤", text: normalizeFinancialText(followUp) },
+    ],
+  };
+}
+
 function buildFinancialSummary(company, analysis) {
   const recommendation = analysis.recommendation;
   const riskProfile = analysis.riskProfile || {};
@@ -395,33 +414,54 @@ function buildFinancialSummary(company, analysis) {
 
   if (analysis.basis === "quarterly" && latestQuarter && previousQuarter && latestTtm && latestAnnual && previousAnnual) {
     return [
+      leadSummarySection(company, recommendation, riskProfile),
       {
-        title: "一、整體財務判讀",
-        text: `${company.company} 目前判讀為「${recommendation.label}」；風險分數 ${riskProfile.score ?? "--"}/100（${riskProfile.band || recommendation.riskLabel}）。本次以 ${rowLabel(latestQuarter)} 最新季資料、單季異常與 TTM 指標作為主要分析口徑，重點在於成長動能是否伴隨現金流與營運資金壓力。`,
+        ...reportSection(
+          "一、有利因素",
+          `${rowLabel(latestQuarter)} 單季營收為 ${money(latestQuarter.revenue)}，${comparisonText(latestQuarter.revenue, previousQuarter.revenue, "前一季")}；最新年度營收為 ${money(latestAnnual.revenue)}，${comparisonText(latestAnnual.revenue, previousAnnual.revenue, "去年")}。TTM 毛利率 ${pct(latestTtm.grossMargin)}、營業利益率 ${pct(latestTtm.operatingMargin)}、稅後淨利率 ${pct(latestTtm.netMargin)}。`,
+          "營收與利潤率仍提供基本支撐，代表本業動能尚未完全失速；這是本次分析中較正面的基礎訊號。",
+          "後續確認營收成長是否能維持毛利率與營業利益率，避免只增加規模卻未同步改善現金回收。",
+        ),
       },
       {
-        title: "二、營收與獲利趨勢",
-        text: `${rowLabel(latestQuarter)} 單季營收為 ${money(latestQuarter.revenue)}，${comparisonText(latestQuarter.revenue, previousQuarter.revenue, "前一季")}；最新年度營收為 ${money(latestAnnual.revenue)}，${comparisonText(latestAnnual.revenue, previousAnnual.revenue, "去年")}。TTM 毛利率 ${pct(latestTtm.grossMargin)}、營業利益率 ${pct(latestTtm.operatingMargin)}、稅後淨利率 ${pct(latestTtm.netMargin)}，需觀察成長是否能轉化為穩定獲利。`,
+        ...reportSection(
+          "二、整體風險判讀",
+          `目前判讀為「${recommendation.label}」；風險分數 ${riskProfile.score ?? "--"}/100（${riskProfile.band || recommendation.riskLabel}）。主要壓力來自 ${recommendation.reason}。`,
+          "本次以最新季資料、單季異常與 TTM 指標作為主要分析口徑；若成長伴隨現金流與營運資金壓力，短期財務彈性會被壓縮。",
+          "優先追蹤現金流、營運資金與槓桿變化，並與下一期財報及期後營運資訊交叉確認。",
+        ),
       },
       {
-        title: "三、現金流與盈餘品質",
-        text: `最新 TTM 營業現金流為 ${money(latestTtm.operatingCashFlow)}，單季營業現金流為 ${money(latestQuarter.operatingCashFlow)}，獲利轉現金比率為 ${ratio(latestTtm.cfoToNetIncome)}。若淨利維持成長但現金流偏弱，代表盈餘品質與營運資金占用需優先檢視。`,
+        ...reportSection(
+          "三、現金流與盈餘品質",
+          `最新 TTM 營業現金流為 ${money(latestTtm.operatingCashFlow)}，單季營業現金流為 ${money(latestQuarter.operatingCashFlow)}，獲利轉現金比率為 ${ratio(latestTtm.cfoToNetIncome)}。`,
+          "若淨利維持成長但現金流偏弱，代表盈餘品質與營運資金占用需要優先檢視，不能只看損益表獲利。",
+          "追蹤應收帳款回收、存貨去化、付款條件變動，以及下一季營業現金流是否回到正向。",
+        ),
       },
       {
-        title: "四、資產負債與償債能力",
-        text: `${rowLabel(latestQuarter)} 流動比率 ${ratio(latestQuarter.currentRatio)}、速動比率 ${ratio(latestQuarter.quickRatio)}、負債比率 ${pct(latestQuarter.debtRatio)}、短期借款 / 流動負債 ${pct(latestQuarter.shortDebtToCurrentLiabilities)}。此區重點在短期流動性、負債增加速度與財務槓桿是否持續升高。`,
+        ...reportSection(
+          "四、資產負債與償債能力",
+          `${rowLabel(latestQuarter)} 流動比率 ${ratio(latestQuarter.currentRatio)}、速動比率 ${ratio(latestQuarter.quickRatio)}、負債比率 ${pct(latestQuarter.debtRatio)}、短期借款 / 流動負債 ${pct(latestQuarter.shortDebtToCurrentLiabilities)}。`,
+          "短期流動性目前尚需與負債增加速度一起判讀；若槓桿升高但現金流未改善，償債緩衝會變薄。",
+          "追蹤短期借款用途、到期分布、可用資金安排，以及流動比率是否能維持在合理區間。",
+        ),
       },
       {
-        title: "五、營運資金變化",
-        text: `${rowLabel(latestQuarter)} 應收帳款 / 營收為 ${pct(latestQuarter.arToRevenue)}，存貨 / 營收為 ${pct(latestQuarter.inventoryToRevenue)}，應收加存貨 / 營收為 ${pct(latestQuarter.workingCapitalLoad)}；應收帳款週轉天數 ${metricDays(latestQuarter.dso)}、存貨週轉天數 ${metricDays(latestQuarter.inventoryDays)}。若營運資金占用升高，將壓縮自由現金流與短期資金彈性。`,
+        ...reportSection(
+          "五、營運資金變化",
+          `${rowLabel(latestQuarter)} 應收帳款 / 營收為 ${pct(latestQuarter.arToRevenue)}，存貨 / 營收為 ${pct(latestQuarter.inventoryToRevenue)}，應收加存貨 / 營收為 ${pct(latestQuarter.workingCapitalLoad)}；應收帳款週轉天數 ${metricDays(latestQuarter.dso)}、存貨週轉天數 ${metricDays(latestQuarter.inventoryDays)}。`,
+          "應收與存貨若同步升高，可能表示營收成長被營運資金占用抵銷，進而壓縮自由現金流。",
+          "追蹤主要客戶收款節奏、庫齡與跌價風險，以及應收加存貨占營收比率是否下降。",
+        ),
       },
       {
-        title: "六、異常訊號摘要",
-        text: `${keyAlerts || "目前未偵測重大季度異常"}。異常訊號應搭配單季、季累計、TTM 與年度趨勢交叉檢視，避免只看單一期間造成誤判。`,
-      },
-      {
-        title: "七、後續觀察重點",
-        text: `${observationText}。`,
+        ...reportSection(
+          "六、異常訊號與後續觀察",
+          `${keyAlerts || "目前未偵測重大季度異常"}。`,
+          "異常訊號應搭配單季、季累計、TTM 與年度趨勢交叉檢視，避免只看單一期間造成誤判。",
+          `${observationText}。`,
+        ),
       },
     ];
   }
@@ -432,33 +472,54 @@ function buildFinancialSummary(company, analysis) {
   if (!latest || !previous) return (analysis.summarySections || []).map((section) => ({ ...section, text: normalizeFinancialText(section.text) }));
 
   return [
+    leadSummarySection(company, recommendation, riskProfile),
     {
-      title: "一、整體財務判讀",
-      text: `${company.company} 目前判讀為「${recommendation.label}」；風險分數 ${riskProfile.score ?? "--"}/100（${riskProfile.band || recommendation.riskLabel}）。主要壓力來自 ${recommendation.reason}，後續應以現金流、營運資金與槓桿變化作為核心觀察軸。`,
+      ...reportSection(
+        "一、有利因素",
+        `最新年度營收為 ${money(latest.revenue)}，${comparisonText(latest.revenue, previous.revenue, "去年")}；毛利率 ${pct(latest.grossMargin)}、營業利益率 ${pct(latest.operatingMargin)}、稅後淨利率 ${pct(latest.netMargin)}。`,
+        "營收與利潤率是本次分析中的正面基礎，代表公司仍具備一定本業獲利能力。",
+        "追蹤營收成長是否能同步維持毛利、本業利益率與淨利品質。",
+      ),
     },
     {
-      title: "二、營收與獲利趨勢",
-      text: `最新年度營收為 ${money(latest.revenue)}，${comparisonText(latest.revenue, previous.revenue, "去年")}；毛利率 ${pct(latest.grossMargin)}、營業利益率 ${pct(latest.operatingMargin)}、稅後淨利率 ${pct(latest.netMargin)}。需觀察營收成長是否能同步維持毛利與本業獲利品質。`,
+      ...reportSection(
+        "二、整體風險判讀",
+        `目前判讀為「${recommendation.label}」；風險分數 ${riskProfile.score ?? "--"}/100（${riskProfile.band || recommendation.riskLabel}）。主要壓力來自 ${recommendation.reason}。`,
+        "若獲利、現金流、營運資金與槓桿沒有同步改善，單一成長指標不足以支撐偏樂觀結論。",
+        "後續以現金流、營運資金與槓桿變化作為核心觀察軸。",
+      ),
     },
     {
-      title: "三、現金流與盈餘品質",
-      text: `營業現金流為 ${money(latest.operatingCashFlow)}，營業現金流 / 負債為 ${pct(latest.cfoDebtRatio)}，獲利轉現金比率為 ${ratio(latest.cfoToNetIncome)}。若損益表獲利未同步轉為現金，代表盈餘品質與營運資金占用需要進一步追蹤。`,
+      ...reportSection(
+        "三、現金流與盈餘品質",
+        `營業現金流為 ${money(latest.operatingCashFlow)}，營業現金流 / 負債為 ${pct(latest.cfoDebtRatio)}，獲利轉現金比率為 ${ratio(latest.cfoToNetIncome)}。`,
+        "若損益表獲利未同步轉為現金，代表盈餘品質與營運資金占用需要進一步追蹤。",
+        "追蹤營業現金流是否改善，以及淨利能否穩定轉化為可用現金。",
+      ),
     },
     {
-      title: "四、資產負債與償債能力",
-      text: `流動比率 ${ratio(latest.currentRatio)}、速動比率 ${ratio(latest.quickRatio)}、負債比率 ${pct(latest.debtRatio)}、利息保障倍數 ${ratio(latest.interestCoverage)} 倍。此區重點在於短期流動性緩衝、財務槓桿與利息覆蓋能力是否同步惡化。`,
+      ...reportSection(
+        "四、資產負債與償債能力",
+        `流動比率 ${ratio(latest.currentRatio)}、速動比率 ${ratio(latest.quickRatio)}、負債比率 ${pct(latest.debtRatio)}、利息保障倍數 ${ratio(latest.interestCoverage)} 倍。`,
+        "此區重點在於短期流動性緩衝、財務槓桿與利息覆蓋能力是否同步惡化。",
+        "追蹤負債比率、利息保障倍數與短期資金安排是否出現連續壓力。",
+      ),
     },
     {
-      title: "五、營運資金變化",
-      text: `應收帳款 / 營收為 ${pct(latest.arToRevenue)}，存貨 / 營收為 ${pct(latest.inventoryToRevenue)}，應收加存貨 / 營收為 ${pct(latest.workingCapitalLoad)}；應收帳款週轉天數 ${metricDays(latest.dso)}、存貨週轉天數 ${metricDays(latest.inventoryDays)}。若兩者升高，表示營收成長可能被營運資金占用抵銷。`,
+      ...reportSection(
+        "五、營運資金變化",
+        `應收帳款 / 營收為 ${pct(latest.arToRevenue)}，存貨 / 營收為 ${pct(latest.inventoryToRevenue)}，應收加存貨 / 營收為 ${pct(latest.workingCapitalLoad)}；應收帳款週轉天數 ${metricDays(latest.dso)}、存貨週轉天數 ${metricDays(latest.inventoryDays)}。`,
+        "若應收與存貨升高，表示營收成長可能被營運資金占用抵銷。",
+        "追蹤收款、庫存去化與應收加存貨占營收比率是否回落。",
+      ),
     },
     {
-      title: "六、異常訊號摘要",
-      text: `${keyAlerts || "目前未偵測重大財務異常"}。異常偵測結果應與趨勢圖、比率矩陣及原始財報來源交叉比對，避免單一指標造成過度解讀。`,
-    },
-    {
-      title: "七、後續觀察重點",
-      text: `${observationText}。`,
+      ...reportSection(
+        "六、異常訊號與後續觀察",
+        `${keyAlerts || "目前未偵測重大財務異常"}。`,
+        "異常偵測結果應與趨勢圖、比率矩陣及原始財報來源交叉比對，避免單一指標造成過度解讀。",
+        `${observationText}。`,
+      ),
     },
   ];
 }
@@ -607,12 +668,30 @@ function renderEvidence(company) {
 function renderSummary(sections) {
   dom.reviewSummary.innerHTML = sections
     .map(
-      (section) => `
-        <section class="report-section">
+      (section) => {
+        const points = section.items
+          ? `
+            <dl class="report-points">
+              ${section.items
+                .map(
+                  (item) => `
+                    <div class="report-point">
+                      <dt>${html(item.label)}</dt>
+                      <dd>${html(item.text)}</dd>
+                    </div>
+                  `,
+                )
+                .join("")}
+            </dl>
+          `
+          : `<p>${html(section.text)}</p>`;
+        return `
+        <section class="report-section ${section.type === "lead" ? "report-lead" : ""}">
           <h3>${html(section.title)}</h3>
-          <p>${html(section.text)}</p>
+          ${points}
         </section>
-      `,
+      `;
+      },
     )
     .join("");
 }
