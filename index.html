@@ -6,6 +6,7 @@
     <title>財報分析助手</title>
     <link rel="stylesheet" href="./style.css" />
     <link rel="stylesheet" href="./ratio-tooltips.css" />
+    <link rel="stylesheet" href="./disclaimer.css" />
   </head>
   <body>
     <main class="app-shell">
@@ -241,6 +242,10 @@
             <textarea id="reviewerNote" placeholder="輸入人工判讀、補充說明或需追蹤事項"></textarea>
           </article>
         </section>
+
+        <footer class="site-disclaimer" aria-label="免責聲明">
+          本工具產生之分析結果僅供財報研究與內部討論參考，不構成投資建議，使用者仍應自行核對原始資料並承擔決策風險。
+        </footer>
       </section>
     </main>
 
@@ -249,5 +254,6 @@
     <script src="./data/mops/3324_auras/auras_mops_data.js"></script>
     <script src="./app.js"></script>
     <script src="./ratio-tooltips.js"></script>
+    <script src="./export-disclaimer.js"></script>
   </body>
 </html>
