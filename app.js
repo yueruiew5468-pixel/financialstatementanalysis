@@ -837,17 +837,93 @@ async function copySummary() {
   showToast("已複製分析摘要。");
 }
 
-function exportReport() {
-  const company = getCompany();
-  const note = document.querySelector("#reviewerNote").value.trim();
-  const content = [
+function formatSummarySectionForExport(section) {
+  if (section.items) {
+    return [
+      section.title,
+      ...section.items.map((item) => `${item.label}：${item.text}`),
+    ].join("\n");
+  }
+  return `${section.title}\n${section.text}`;
+}
+
+function formatAlertsForExport(alerts, alertRules = []) {
+  const materialAlerts = alerts.filter((item) => item.severity !== "low");
+  const lines = [
+    `已觸發 ${materialAlerts.length} 項 / 監控 ${alertRules.length} 項規則`,
+  ];
+
+  if (!materialAlerts.length) {
+    lines.push("目前未偵測重大財務異常。");
+    return lines.join("\n");
+  }
+
+  materialAlerts.forEach((item, index) => {
+    lines.push(`${index + 1}. ${item.title}`);
+    lines.push(`   說明：${item.detail}`);
+    if (item.action) lines.push(`   追蹤：${item.action}`);
+  });
+
+  return lines.join("\n");
+}
+
+function formatEvidenceForExport(company) {
+  const evidence = company.evidence || [];
+  if (!evidence.length) return "尚未提供來源追溯資料。";
+
+  return evidence
+    .map(([title, detail], index) => `${index + 1}. ${title}：${detail}`)
+    .join("\n");
+}
+
+function buildExportReport(company, analysis, note = "") {
+  const selectedBasis = analysis.views[activeBasis] ? activeBasis : analysis.defaultView;
+  const view = analysis.views[selectedBasis];
+  const generatedAt = new Date().toLocaleString("zh-TW", { hour12: false });
+  const sourceLabel = company.dataSource || "匯入文件";
+  const recommendation = analysis.recommendation || {};
+  const riskProfile = analysis.riskProfile || {};
+  const summaryBlocks = analysis.summarySections
+    .map(formatSummarySectionForExport)
+    .join("\n\n");
+  const ratioSnapshot = (view.ratios || analysis.ratios || [])
+    .slice(0, 6)
+    .map((item) => `- ${item.name}：${item.latest}（${item.delta}，${item.reading}）`)
+    .join("\n");
+
+  return [
     `財報分析報告 - ${company.company}`,
     "",
-    dom.reviewSummary.innerText.trim(),
+    "一、報告資訊",
+    `產生時間：${generatedAt}`,
+    `分析標的：${company.company}`,
+    `資料來源：${sourceLabel}`,
+    `分析口徑：${view.ratioBasisLabel || "年度 / TTM"}`,
+    `初步結論：${recommendation.label || "--"}`,
+    `風險分數：${riskProfile.score ?? "--"}/100（${riskProfile.band || recommendation.riskLabel || "--"}）`,
     "",
-    "人工註記",
+    "二、分析摘要",
+    summaryBlocks,
+    "",
+    "三、主要財務指標",
+    ratioSnapshot || "尚無可用比率資料。",
+    "",
+    "四、異常偵測",
+    formatAlertsForExport(analysis.alerts || [], analysis.alertRules || []),
+    "",
+    "五、來源追溯",
+    formatEvidenceForExport(company),
+    "",
+    "六、人工註記",
     note || "尚未填寫。",
   ].join("\n");
+}
+
+function exportReport() {
+  const company = getCompany();
+  const analysis = normalizeAnalysis(company, analyzeCompany(company));
+  const note = document.querySelector("#reviewerNote").value.trim();
+  const content = buildExportReport(company, analysis, note);
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
