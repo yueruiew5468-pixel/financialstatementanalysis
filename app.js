@@ -838,13 +838,19 @@ async function copySummary() {
 }
 
 function formatSummarySectionForExport(section) {
+  const title = formatSummaryTitleForExport(section.title);
   if (section.items) {
     return [
-      section.title,
+      title,
       ...section.items.map((item) => `${item.label}：${item.text}`),
     ].join("\n");
   }
-  return `${section.title}\n${section.text}`;
+  return `${title}\n${section.text}`;
+}
+
+function formatSummaryTitleForExport(title) {
+  const cleanedTitle = String(title || "").replace(/^[一二三四五六七八九十]+、\s*/u, "");
+  return cleanedTitle === title ? cleanedTitle : `摘要重點：${cleanedTitle}`;
 }
 
 function formatAlertsForExport(alerts, alertRules = []) {
