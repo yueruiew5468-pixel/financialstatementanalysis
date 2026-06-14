@@ -800,12 +800,50 @@ select {
   padding-top: 12px;
 }
 
+.report-lead {
+  grid-column: 1 / -1;
+  border-top: 0;
+  border-left: 4px solid var(--accent);
+  border-radius: 7px;
+  background: #f8fafc;
+  padding: 12px 14px;
+}
+
 .report-section h3 {
   margin: 0 0 6px;
   font-size: 15px;
 }
 
+.report-lead h3 {
+  color: var(--accent);
+}
+
 .report-section p {
+  margin: 0;
+  color: #344054;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.report-points {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.report-point {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.report-point dt {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.report-point dd {
   margin: 0;
   color: #344054;
   font-size: 14px;
@@ -1248,6 +1286,15 @@ textarea {
 
   .report-section {
     padding-top: 10px;
+  }
+
+  .report-lead {
+    padding: 11px 12px;
+  }
+
+  .report-point {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 8px;
   }
 
   textarea {
