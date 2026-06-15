@@ -65,7 +65,7 @@
     overviewDom.band.textContent = band;
     overviewDom.band.className = `status-pill ${band.includes("高") ? "danger" : band.includes("觀察") || band.includes("中") ? "warning" : ""}`;
     overviewDom.lead.textContent =
-      `目前判讀為「${recommendation.label || "--"}」，風險分數 ${riskProfile.score ?? "--"}/100（${band}）。` +
+      `目前判讀為「${recommendation.label || "--"}」，風險等級為「${band}」。` +
       `先看風險總覽確認警覺方向，再進入 YoY、趨勢與比率頁拆解原因。`;
 
     const riskItems = materialAlerts.slice(0, 3);
