@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="./style.css" />
     <link rel="stylesheet" href="./ratio-tooltips.css" />
     <link rel="stylesheet" href="./disclaimer.css" />
+    <link rel="stylesheet" href="./yoy-dashboard.css" />
   </head>
   <body>
     <main class="app-shell">
@@ -18,6 +19,14 @@
             <h1>財報分析</h1>
           </div>
         </div>
+
+        <nav class="view-menu" aria-label="功能表">
+          <button class="selected" type="button" data-view="overview">總覽</button>
+          <button type="button" data-view="yoy">單季 YoY</button>
+          <button type="button" data-view="ratios">財務比率</button>
+          <button type="button" data-view="alerts">異常與來源</button>
+          <button type="button" data-view="summary">摘要註記</button>
+        </nav>
 
         <section class="panel compact profile-panel">
           <div class="panel-title">
@@ -87,7 +96,7 @@
           </div>
         </header>
 
-        <section class="kpi-strip" aria-label="財報分析指標">
+        <section class="kpi-strip view-section" data-view-section="overview" aria-label="財報分析指標">
           <article class="kpi conclusion-kpi">
             <div class="kpi-heading">
               <span>初步分析結論</span>
@@ -123,8 +132,71 @@
           </article>
         </section>
 
+        <section class="yoy-dashboard view-section" data-view-section="yoy" hidden>
+          <div class="dashboard-heading">
+            <div>
+              <p class="eyebrow">Single Quarter YoY</p>
+              <h3>單季 YoY Dashboard</h3>
+            </div>
+            <span class="status-pill" id="yoySeasonality">同季比較</span>
+          </div>
+
+          <div class="yoy-kpi-strip" aria-label="單季 YoY 重點指標">
+            <article class="kpi yoy-kpi">
+              <span>最新比較</span>
+              <strong id="yoyLatestPeriod">--</strong>
+              <small id="yoyCompareBase">等待資料</small>
+            </article>
+            <article class="kpi yoy-kpi">
+              <span>營收 YoY</span>
+              <strong id="yoyRevenue">--</strong>
+              <small id="yoyRevenueNote">同季營收變化</small>
+            </article>
+            <article class="kpi yoy-kpi">
+              <span>營業利益 YoY</span>
+              <strong id="yoyOperatingIncome">--</strong>
+              <small id="yoyOperatingNote">本業成長品質</small>
+            </article>
+            <article class="kpi yoy-kpi">
+              <span>營業現金流 YoY</span>
+              <strong id="yoyCashFlow">--</strong>
+              <small id="yoyCashFlowNote">現金轉換</small>
+            </article>
+            <article class="kpi yoy-kpi">
+              <span>營運資金占用</span>
+              <strong id="yoyWorkingCapital">--</strong>
+              <small id="yoyWorkingCapitalNote">應收 + 存貨 / 營收</small>
+            </article>
+          </div>
+
+          <article class="panel yoy-panel">
+            <div class="panel-title">
+              <span>單季 YoY 判讀</span>
+              <span class="status-pill" id="yoySignal">等待資料</span>
+            </div>
+            <div class="yoy-brief" id="yoyBrief">尚無可比較的單季資料。</div>
+            <div class="yoy-bars" id="yoyChart" aria-label="單季營收 YoY 趨勢"></div>
+            <div class="ratio-table-wrap">
+              <table class="ratio-table yoy-table">
+                <thead>
+                  <tr>
+                    <th>期間</th>
+                    <th>營收 YoY</th>
+                    <th>營業利益 YoY</th>
+                    <th>淨利 YoY</th>
+                    <th>營業現金流 YoY</th>
+                    <th>營運資金占用</th>
+                    <th>判讀</th>
+                  </tr>
+                </thead>
+                <tbody id="yoyTable"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
         <section class="analysis-grid">
-          <article class="panel alert-panel">
+          <article class="panel alert-panel view-section" data-view-section="alerts" hidden>
             <div class="panel-title">
               <span>異常偵測</span>
               <span class="status-pill danger" id="riskLevel">高關注</span>
@@ -137,7 +209,7 @@
             </details>
           </article>
 
-          <article class="panel wide trend-panel">
+          <article class="panel wide trend-panel view-section" data-view-section="overview">
             <div class="panel-title">
               <span>財務趨勢</span>
               <div class="segmented chart-toggle" role="tablist" aria-label="趨勢指標">
@@ -150,7 +222,7 @@
             <div class="bar-chart" id="barChart" aria-label="財務趨勢圖"></div>
           </article>
 
-          <article class="panel wide ratios-panel">
+          <article class="panel wide ratios-panel view-section" data-view-section="ratios" hidden>
             <div class="panel-title">
               <span>財務比率矩陣</span>
               <div class="panel-tools">
@@ -179,7 +251,7 @@
             </div>
           </article>
 
-          <article class="panel wide quarters-panel">
+          <article class="panel wide quarters-panel view-section" data-view-section="alerts" hidden>
             <div class="panel-title">
               <span>季度預警</span>
               <span class="status-pill" id="quarterBasis">單季 / TTM</span>
@@ -200,7 +272,7 @@
             </div>
           </article>
 
-          <article class="panel evidence-panel">
+          <article class="panel evidence-panel view-section" data-view-section="alerts" hidden>
             <div class="panel-title">
               <span>來源追溯</span>
               <span class="status-pill">防幻覺設計</span>
@@ -210,7 +282,7 @@
 
         </section>
 
-        <section class="report-band">
+        <section class="report-band view-section" data-view-section="summary" hidden>
           <article class="panel report-panel">
             <div class="panel-title">
               <span>AI 財報分析摘要</span>
@@ -254,6 +326,7 @@
     <script src="./analysis-overrides.js"></script>
     <script src="./data/mops/3324_auras/auras_mops_data.js"></script>
     <script src="./app.js"></script>
+    <script src="./yoy-dashboard.js"></script>
     <script src="./ratio-tooltips.js"></script>
     <script src="./export-disclaimer.js"></script>
   </body>
