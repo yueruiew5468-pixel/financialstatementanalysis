@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="./style.css" />
     <link rel="stylesheet" href="./ratio-tooltips.css" />
     <link rel="stylesheet" href="./disclaimer.css" />
-    <link rel="stylesheet" href="./yoy-dashboard.css?v=20260615-hide-fix" />
+    <link rel="stylesheet" href="./yoy-dashboard.css?v=20260615-risk-overview" />
     <style>
       .view-section[hidden] {
         display: none !important;
@@ -26,7 +26,7 @@
         </div>
 
         <nav class="view-menu" aria-label="功能表">
-          <button class="selected" type="button" data-view="overview">總覽</button>
+          <button class="selected" type="button" data-view="overview">風險總覽</button>
           <button type="button" data-view="yoy">單季 YoY</button>
           <button type="button" data-view="ratios">趨勢與比率</button>
           <button type="button" data-view="alerts">異常與來源</button>
@@ -104,7 +104,7 @@
         <section class="kpi-strip view-section" data-view-section="overview" aria-label="財報分析指標">
           <article class="kpi conclusion-kpi">
             <div class="kpi-heading">
-              <span>初步分析結論</span>
+              <span>風險總覽</span>
               <span class="status-pill conclusion-pill">重點判讀</span>
             </div>
             <strong id="recommendation">審慎觀察</strong>
@@ -134,6 +134,25 @@
             <span>負債比率</span>
             <strong id="debtRatio">71.0%</strong>
             <small id="debtRatioDelta">較去年上升 13.9%</small>
+          </article>
+        </section>
+
+        <section class="overview-grid view-section" data-view-section="overview" aria-label="風險總覽補充">
+          <article class="panel overview-card">
+            <div class="panel-title">
+              <span>主要風險摘要</span>
+              <span class="status-pill" id="overviewRiskBand">等待分析</span>
+            </div>
+            <p class="overview-lead" id="overviewRiskLead">等待分析結果。</p>
+            <ul class="overview-list" id="overviewRiskList"></ul>
+          </article>
+
+          <article class="panel overview-card">
+            <div class="panel-title">
+              <span>建議追蹤項目</span>
+              <span class="status-pill warning">下一步</span>
+            </div>
+            <ul class="overview-list action-list" id="overviewActionList"></ul>
           </article>
         </section>
 
@@ -331,7 +350,7 @@
     <script src="./analysis-overrides.js"></script>
     <script src="./data/mops/3324_auras/auras_mops_data.js"></script>
     <script src="./app.js"></script>
-    <script src="./yoy-dashboard.js?v=20260615-hide-fix"></script>
+    <script src="./yoy-dashboard.js?v=20260615-risk-overview"></script>
     <script src="./ratio-tooltips.js"></script>
     <script src="./export-disclaimer.js"></script>
   </body>
