@@ -259,8 +259,6 @@ const dom = {
   dataSource: document.querySelector("#dataSource"),
   recommendation: document.querySelector("#recommendation"),
   recommendationReason: document.querySelector("#recommendationReason"),
-  riskScore: document.querySelector("#riskScore"),
-  riskScoreReason: document.querySelector("#riskScoreReason"),
   alertCount: document.querySelector("#alertCount"),
   currentRatio: document.querySelector("#currentRatio"),
   currentRatioDelta: document.querySelector("#currentRatioDelta"),
@@ -375,7 +373,7 @@ function leadSummarySection(company, recommendation, riskProfile) {
   return {
     type: "lead",
     title: "一句話總結",
-    text: `${company.company} 初步判讀為「${recommendation.label}」，風險分數 ${riskProfile.score ?? "--"}/100（${riskProfile.band || recommendation.riskLabel}）；目前重點是確認成長動能是否能同步轉化為現金流與營運資金品質改善。`,
+    text: `${company.company} 初步判讀為「${recommendation.label}」，風險等級為「${riskProfile.band || recommendation.riskLabel}」；目前重點是確認成長動能是否能同步轉化為現金流與營運資金品質改善。`,
   };
 }
 
@@ -426,7 +424,7 @@ function buildFinancialSummary(company, analysis) {
       {
         ...reportSection(
           "二、整體風險判讀",
-          `目前判讀為「${recommendation.label}」；風險分數 ${riskProfile.score ?? "--"}/100（${riskProfile.band || recommendation.riskLabel}）。主要壓力來自 ${recommendation.reason}。`,
+          `目前判讀為「${recommendation.label}」；風險等級為「${riskProfile.band || recommendation.riskLabel}」。主要壓力來自 ${recommendation.reason}。`,
           "本次以最新季資料、單季異常與 TTM 指標作為主要分析口徑；若成長伴隨現金流與營運資金壓力，短期財務彈性會被壓縮。",
           "優先追蹤現金流、營運資金與槓桿變化，並與下一期財報及期後營運資訊交叉確認。",
         ),
@@ -484,7 +482,7 @@ function buildFinancialSummary(company, analysis) {
     {
       ...reportSection(
         "二、整體風險判讀",
-        `目前判讀為「${recommendation.label}」；風險分數 ${riskProfile.score ?? "--"}/100（${riskProfile.band || recommendation.riskLabel}）。主要壓力來自 ${recommendation.reason}。`,
+        `目前判讀為「${recommendation.label}」；風險等級為「${riskProfile.band || recommendation.riskLabel}」。主要壓力來自 ${recommendation.reason}。`,
         "若獲利、現金流、營運資金與槓桿沒有同步改善，單一成長指標不足以支撐偏樂觀結論。",
         "後續以現金流、營運資金與槓桿變化作為核心觀察軸。",
       ),
@@ -537,8 +535,6 @@ function renderKpis(rows, recommendation, alerts, compareLabel, riskProfile) {
 
   dom.recommendation.textContent = recommendation.label;
   dom.recommendationReason.textContent = recommendation.reason;
-  dom.riskScore.textContent = `${riskProfile.score}`;
-  dom.riskScoreReason.textContent = `${riskProfile.band}；${riskProfile.summary}`;
   dom.alertCount.textContent = alerts.filter((item) => item.severity !== "low").length;
   dom.currentRatio.textContent = ratio(latest.currentRatio);
   dom.currentRatioDelta.textContent = comparisonText(latest.currentRatio, previous.currentRatio, compareLabel);
@@ -603,6 +599,29 @@ function formatRatioDeltaForDisplay(item) {
   return formatPercentPointDelta(latestPercent / 100, previousPercent / 100, compareLabel);
 }
 
+const ratioHelp = {
+  currentRatio: "流動資產 / 流動負債。用來看一年內可動用資產是否足以覆蓋短期負債；低於 1 通常代表短期資金壓力較高。",
+  quickRatio: "（流動資產 - 存貨）/ 流動負債。排除較不易快速變現的存貨，觀察更保守的短期償債能力。",
+  debtRatio: "總負債 / 總資產。衡量財務槓桿與資本結構壓力；越高代表資產中由負債支撐的比例越高。",
+  grossMargin: "毛利 / 營收。觀察產品報價、成本控制與產品組合品質；下降時要追蹤成本與價格壓力。",
+  operatingMargin: "營業利益 / 營收。觀察本業獲利能力，較不受業外收入與一次性項目影響。",
+  netMargin: "稅後淨利 / 營收。看每一元營收最後留下多少淨利，會受到本業、業外、稅費與一次性因素影響。",
+  roa: "稅後淨利 / 總資產。衡量公司使用全部資產創造獲利的效率。",
+  roe: "稅後淨利 / 股東權益。衡量股東資本的報酬率；需搭配負債比率判斷是否靠槓桿推高。",
+  interestCoverage: "營業利益 / 利息費用。衡量本業獲利覆蓋利息支出的能力；倍數越低，利率與獲利波動風險越高。",
+  cfoDebtRatio: "營業現金流 / 總負債。看現金流對負債的支撐度；為負時代表營運本身沒有產生現金支撐。",
+  arToRevenue: "應收帳款 / 營收。觀察收款壓力與買方信用條件；比率升高可能代表營收尚未有效轉成現金。",
+  inventoryToRevenue: "存貨 / 營收。觀察備貨、庫存去化與跌價風險；比率升高時要追蹤庫齡與訂單覆蓋。",
+  workingCapitalLoad: "（應收帳款 + 存貨）/ 營收。衡量營收被營運資金占用的程度；越高越可能壓縮自由現金流。",
+  shortDebtToCurrentLiabilities: "短期借款 / 流動負債。觀察短債集中度與到期壓力；比率高時需確認展延與資金來源。",
+  dso: "應收帳款 / 營收 × 期間天數。估算平均收款天數；天數拉長代表回款速度變慢。",
+  inventoryDays: "存貨 / 銷貨成本 × 期間天數。估算平均存貨去化天數；天數拉長代表庫存占用時間變長。",
+};
+
+function ratioHelpText(item) {
+  return ratioHelp[item.key] || "此指標用於輔助判斷財務結構、獲利品質與營運資金變化。";
+}
+
 function renderRatios(items) {
   const latestLabel = dom.ratioLatestHeader.textContent || "最新期間";
   const previousLabel = dom.ratioPreviousHeader.textContent || "比較期間";
@@ -610,7 +629,12 @@ function renderRatios(items) {
     .map(
       (item) => `
         <tr>
-          <td data-label="指標"><strong>${html(item.name)}</strong></td>
+          <td data-label="指標">
+            <strong class="metric-name">
+              ${html(item.name)}
+              <span class="metric-help" tabindex="0" aria-label="${html(ratioHelpText(item))}" data-tooltip="${html(ratioHelpText(item))}">i</span>
+            </strong>
+          </td>
           <td data-label="${html(latestLabel)}">${html(item.latest)}</td>
           <td data-label="${html(previousLabel)}">${html(item.previous)}</td>
           <td data-label="變動">${html(formatRatioDeltaForDisplay(item))}</td>
@@ -906,6 +930,16 @@ function formatEvidenceForExport(company) {
     .join("\n");
 }
 
+function formatDisclaimerForExport() {
+  return [
+    "本工具依公開財報資料、使用者匯入資料及系統規則產生財務比率、異常偵測、風險等級與分析摘要。相關內容僅供研究、教學、內部討論或初步分析參考，不構成任何投資建議、買賣建議。",
+    "",
+    "本工具不保證資料即時性、完整性、正確性或分析結果之適用性。使用者應自行核對公開資訊觀測站、公司財報、會計師意見、重大訊息及其他原始資料，並依自身目的、風險承受能力與專業判斷作成決策。",
+    "",
+    "任何因使用本工具內容所產生之投資、交易或其他決策及其結果，均由使用者自行承擔。本工具提供者不對任何直接或間接損失負責。",
+  ].join("\n");
+}
+
 function buildExportReport(company, analysis, note = "") {
   const selectedBasis = analysis.views[activeBasis] ? activeBasis : analysis.defaultView;
   const view = analysis.views[selectedBasis];
@@ -930,7 +964,7 @@ function buildExportReport(company, analysis, note = "") {
     `資料來源：${sourceLabel}`,
     `分析口徑：${view.ratioBasisLabel || "年度 / TTM"}`,
     `初步結論：${recommendation.label || "--"}`,
-    `風險分數：${riskProfile.score ?? "--"}/100（${riskProfile.band || recommendation.riskLabel || "--"}）`,
+    `風險等級：${riskProfile.band || recommendation.riskLabel || "--"}`,
     "",
     "二、分析摘要",
     summaryBlocks,
@@ -946,6 +980,9 @@ function buildExportReport(company, analysis, note = "") {
     "",
     "六、人工註記",
     note || "尚未填寫。",
+    "",
+    "七、免責聲明",
+    formatDisclaimerForExport(),
   ].join("\n");
 }
 
