@@ -7,7 +7,12 @@
     <link rel="stylesheet" href="./style.css" />
     <link rel="stylesheet" href="./ratio-tooltips.css" />
     <link rel="stylesheet" href="./disclaimer.css" />
-    <link rel="stylesheet" href="./yoy-dashboard.css" />
+    <link rel="stylesheet" href="./yoy-dashboard.css?v=20260615-hide-fix" />
+    <style>
+      .view-section[hidden] {
+        display: none !important;
+      }
+    </style>
   </head>
   <body>
     <main class="app-shell">
@@ -326,7 +331,7 @@
     <script src="./analysis-overrides.js"></script>
     <script src="./data/mops/3324_auras/auras_mops_data.js"></script>
     <script src="./app.js"></script>
-    <script src="./yoy-dashboard.js"></script>
+    <script src="./yoy-dashboard.js?v=20260615-hide-fix"></script>
     <script src="./ratio-tooltips.js"></script>
     <script src="./export-disclaimer.js"></script>
   </body>
