@@ -3,6 +3,12 @@
 
   const viewButtons = document.querySelectorAll(".view-menu button");
   const viewSections = document.querySelectorAll("[data-view-section]");
+  const overviewDom = {
+    band: document.querySelector("#overviewRiskBand"),
+    lead: document.querySelector("#overviewRiskLead"),
+    riskList: document.querySelector("#overviewRiskList"),
+    actionList: document.querySelector("#overviewActionList"),
+  };
   const yoyDom = {
     seasonality: document.querySelector("#yoySeasonality"),
     latestPeriod: document.querySelector("#yoyLatestPeriod"),
@@ -25,6 +31,87 @@
 
   let activeView = "overview";
   const originalRender = typeof render === "function" ? render : null;
+
+  function getCurrentAnalysis() {
+    if (typeof getCompany !== "function" || typeof analyzeCompany !== "function" || typeof normalizeAnalysis !== "function") return null;
+    const company = getCompany();
+    return normalizeAnalysis(company, analyzeCompany(company));
+  }
+
+  function cleanText(value) {
+    return String(value || "").replace(/[。；;]+$/u, "");
+  }
+
+  function severityLabel(severity) {
+    if (severity === "high") return "高";
+    if (severity === "medium") return "中";
+    return "低";
+  }
+
+  function severityClass(severity) {
+    if (severity === "high") return "danger";
+    if (severity === "medium") return "warning";
+    return "";
+  }
+
+  function renderRiskOverview(analysis) {
+    if (!analysis || !overviewDom.band || !overviewDom.lead || !overviewDom.riskList || !overviewDom.actionList) return;
+
+    const recommendation = analysis.recommendation || {};
+    const riskProfile = analysis.riskProfile || {};
+    const materialAlerts = (analysis.alerts || []).filter((item) => item.severity !== "low");
+    const band = riskProfile.band || recommendation.riskLabel || "觀察";
+
+    overviewDom.band.textContent = band;
+    overviewDom.band.className = `status-pill ${band.includes("高") ? "danger" : band.includes("觀察") || band.includes("中") ? "warning" : ""}`;
+    overviewDom.lead.textContent =
+      `目前判讀為「${recommendation.label || "--"}」，風險分數 ${riskProfile.score ?? "--"}/100（${band}）。` +
+      `先看風險總覽確認警覺方向，再進入 YoY、趨勢與比率頁拆解原因。`;
+
+    const riskItems = materialAlerts.slice(0, 3);
+    overviewDom.riskList.innerHTML = riskItems.length
+      ? riskItems
+          .map(
+            (item) => `
+              <li>
+                <strong>
+                  ${html(item.title)}
+                  <span class="overview-tag ${severityClass(item.severity)}">${severityLabel(item.severity)}風險</span>
+                </strong>
+                <span>${html(item.detail)}</span>
+              </li>
+            `,
+          )
+          .join("")
+      : `
+        <li>
+          <strong>目前未偵測重大風險<span class="overview-tag">追蹤</span></strong>
+          <span>仍建議定期比對下一期財報、月營收與期後重大訊息。</span>
+        </li>
+      `;
+
+    const actionItems = materialAlerts
+      .map((item) => cleanText(item.action))
+      .filter(Boolean)
+      .slice(0, 4);
+    overviewDom.actionList.innerHTML = actionItems.length
+      ? actionItems
+          .map(
+            (item, index) => `
+              <li>
+                <strong>追蹤 ${index + 1}<span class="overview-tag warning">待確認</span></strong>
+                <span>${html(item)}。</span>
+              </li>
+            `,
+          )
+          .join("")
+      : `
+        <li>
+          <strong>例行追蹤<span class="overview-tag">待確認</span></strong>
+          <span>持續比對月營收、期後現金流、管理層展望與下一期財報。</span>
+        </li>
+      `;
+  }
 
   function percentChange(current, previous) {
     if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) return Number.NaN;
@@ -144,11 +231,8 @@
     yoyDom.table.innerHTML = `<tr><td colspan="7">尚無可比較的單季 YoY 資料。</td></tr>`;
   }
 
-  function refreshYoYDashboard() {
-    if (typeof getCompany !== "function" || typeof analyzeCompany !== "function" || typeof normalizeAnalysis !== "function") return;
-
-    const company = getCompany();
-    const analysis = normalizeAnalysis(company, analyzeCompany(company));
+  function refreshYoYDashboard(analysis) {
+    if (!analysis) return;
     const quarterRows = analysis.views?.quarter?.rows || analysis.quarterRows || [];
     const yoyRows = buildYoYRows(quarterRows);
     yoyDom.seasonality.textContent = seasonalityText(quarterRows);
@@ -228,15 +312,22 @@
     button.addEventListener("click", () => setActiveView(button.dataset.view));
   });
 
+  function refreshDashboards() {
+    const analysis = getCurrentAnalysis();
+    if (!analysis) return;
+    renderRiskOverview(analysis);
+    refreshYoYDashboard(analysis);
+  }
+
   if (originalRender) {
     render = function renderWithYoYDashboard(...args) {
       const result = originalRender.apply(this, args);
-      refreshYoYDashboard();
+      refreshDashboards();
       setActiveView(activeView);
       return result;
     };
   }
 
-  refreshYoYDashboard();
+  refreshDashboards();
   setActiveView(activeView);
 })();
