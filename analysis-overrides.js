@@ -104,7 +104,7 @@
     return [
       {
         title: "一、整體財務判讀",
-        text: `${company.company} 目前判讀為「${recommendation.label}」；風險分數 ${riskProfile.score}/100（${riskProfile.band}）。主要壓力來自 ${recommendation.reason}，後續應以現金流、營運資金與槓桿變化作為核心觀察軸。`,
+        text: `${company.company} 目前判讀為「${recommendation.label}」；風險等級為「${riskProfile.band}」。主要壓力來自 ${recommendation.reason}，後續應以現金流、營運資金與槓桿變化作為核心觀察軸。`,
       },
       {
         title: "二、營收與獲利趨勢",
@@ -157,7 +157,7 @@
     return [
       {
         title: "一、整體財務判讀",
-        text: `${company.company} 目前判讀為「${recommendation.label}」；風險分數 ${riskProfile.score}/100（${riskProfile.band}）。本次以 ${periodLabel(latestQuarter)} 最新季資料、單季異常與 TTM 指標作為主要分析口徑，重點在於成長動能是否伴隨現金流與營運資金壓力。`,
+        text: `${company.company} 目前判讀為「${recommendation.label}」；風險等級為「${riskProfile.band}」。本次以 ${periodLabel(latestQuarter)} 最新季資料、單季異常與 TTM 指標作為主要分析口徑，重點在於成長動能是否伴隨現金流與營運資金壓力。`,
       },
       {
         title: "二、營收與獲利趨勢",
