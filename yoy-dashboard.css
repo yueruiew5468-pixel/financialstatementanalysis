@@ -22,6 +22,10 @@
   color: var(--accent);
 }
 
+.view-section[hidden] {
+  display: none !important;
+}
+
 .yoy-dashboard {
   margin-bottom: 14px;
 }
